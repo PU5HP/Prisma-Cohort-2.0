@@ -5,7 +5,21 @@ const prisma = new PrismaClient();
 
 
 //user create
-async function insertUser(username:string, password:string, firstName:string, lastName:string, email:string) {
+export async function insertUser(username:string, password:string, firstName:string, lastName:string, email:string) {
+
+    const user = await prisma.user.findFirst({
+        where: {
+            OR: [
+                { username },
+                { email }
+            ]
+        }
+    })
+
+    if(user!==null){
+        console.log("user exists already");
+        return null;
+    }
     const response = await prisma.user.create({
         data:{
             username,
@@ -16,13 +30,14 @@ async function insertUser(username:string, password:string, firstName:string, la
         }
     })
     console.log(response);
+    console.log("successfully created user!")
 }
 
 //insertUser('user4','user4','user4','user4','user4');
 
 /*Todo create*/
 
-async function insertTodo( title:string, description:string, done:boolean, userId:number) {
+export async function insertTodo( title:string, description:string, done:boolean, userId:number) {
     const response = await prisma.todo.create({
         data:{
             title,
@@ -37,26 +52,30 @@ async function insertTodo( title:string, description:string, done:boolean, userI
 
 //a function that let’s you fetch the details of a user given their username @unique
 
-async function getUser(username:string){
+export async function getUser(username:string){
     const response = await prisma.user.findFirst({
         where:{
             username:username
         }
     })
+    if(response===null){
+        return {"msg":"user not found"};
+    }
     const userTodo = await prisma.todo.findMany({
         where:{
             userId:response?.id
         }
     })
-    console.log("user details:", response);
-    console.log("user todos:",userTodo);
+    //console.log("user details:", response);
+    //console.log("user todos:",userTodo);
+    return {'userDetails':response,'todoDetails':userTodo};
 }
 
 //getUser('user4')
 
 // update the first and last name of the user
 
-async function updateUser(username:string, firstName:string, lastName:string){
+export async function updateUser(username:string, firstName:string, lastName:string){
     //find if username exists in DB
     const response = await prisma.user.findFirst({
         where:{
@@ -64,8 +83,7 @@ async function updateUser(username:string, firstName:string, lastName:string){
         }
     })
     if(response===null){
-        console.log('Not updated : wrong username');
-        return;
+        return {'Not updated' : 'wrong username'};
     }
     const updatedUserDetails = await prisma.user.update({
         where:{username:response.username},
@@ -74,8 +92,7 @@ async function updateUser(username:string, firstName:string, lastName:string){
             lastName
         }
     })
-    console.log('old details:',response);
-    console.log("updated :",updatedUserDetails);
+    return {'updated' : 'success'};
 }
 
 //updateUser('user1','new user 1', 'new user ln 100');
@@ -84,7 +101,7 @@ async function updateUser(username:string, firstName:string, lastName:string){
 
 // to put todo in the DB
 
-async function createTodo(userId:number,title:string, description:string) {
+export async function createTodo(userId:number,title:string, description:string) {
     //find if user is there and then create todo : the user id should always be correct in this case
     // foreign key constrained
     const res = await prisma.todo.create({
@@ -98,13 +115,17 @@ async function createTodo(userId:number,title:string, description:string) {
 }
 //createTodo(3,"title1.012","des1.021");
 
-async function getTodos(userId:number) {
+export async function getTodos(userId:number) {
     const res = await prisma.todo.findMany({
         where:{
             userId: userId,
         }
 })
+if(res===null){
+    return {'msg':'todos not present'}
+}
 console.log(res);
+return res;
 }
 
 //getTodos(3);
@@ -123,4 +144,4 @@ async function getTodosAndUserDetails(userId: number) {
     console.log(todos);
 }
 
-getTodosAndUserDetails(1);
+//getTodosAndUserDetails(1);

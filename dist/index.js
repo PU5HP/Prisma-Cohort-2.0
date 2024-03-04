@@ -9,11 +9,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getTodos = exports.createTodo = exports.updateUser = exports.getUser = exports.insertTodo = exports.insertUser = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 //user create
 function insertUser(username, password, firstName, lastName, email) {
     return __awaiter(this, void 0, void 0, function* () {
+        const user = yield prisma.user.findFirst({
+            where: {
+                OR: [
+                    { username },
+                    { email }
+                ]
+            }
+        });
+        if (user !== null) {
+            console.log("user exists already");
+            return null;
+        }
         const response = yield prisma.user.create({
             data: {
                 username,
@@ -24,8 +37,10 @@ function insertUser(username, password, firstName, lastName, email) {
             }
         });
         console.log(response);
+        console.log("successfully created user!");
     });
 }
+exports.insertUser = insertUser;
 //insertUser('user4','user4','user4','user4','user4');
 /*Todo create*/
 function insertTodo(title, description, done, userId) {
@@ -41,6 +56,7 @@ function insertTodo(title, description, done, userId) {
         console.log('todo-inserted:', response);
     });
 }
+exports.insertTodo = insertTodo;
 //insertTodo('user4.1-title','user-4.1-des',false,4);
 //a function that let’s you fetch the details of a user given their username @unique
 function getUser(username) {
@@ -50,15 +66,20 @@ function getUser(username) {
                 username: username
             }
         });
+        if (response === null) {
+            return { "msg": "user not found" };
+        }
         const userTodo = yield prisma.todo.findMany({
             where: {
                 userId: response === null || response === void 0 ? void 0 : response.id
             }
         });
-        console.log("user details:", response);
-        console.log("user todos:", userTodo);
+        //console.log("user details:", response);
+        //console.log("user todos:",userTodo);
+        return { 'userDetails': response, 'todoDetails': userTodo };
     });
 }
+exports.getUser = getUser;
 //getUser('user4')
 // update the first and last name of the user
 function updateUser(username, firstName, lastName) {
@@ -70,8 +91,7 @@ function updateUser(username, firstName, lastName) {
             }
         });
         if (response === null) {
-            console.log('Not updated : wrong username');
-            return;
+            return { 'Not updated': 'wrong username' };
         }
         const updatedUserDetails = yield prisma.user.update({
             where: { username: response.username },
@@ -80,10 +100,10 @@ function updateUser(username, firstName, lastName) {
                 lastName
             }
         });
-        console.log('old details:', response);
-        console.log("updated :", updatedUserDetails);
+        return { 'updated': 'success' };
     });
 }
+exports.updateUser = updateUser;
 //updateUser('user1','new user 1', 'new user ln 100');
 // to do functions
 // to put todo in the DB
@@ -101,6 +121,7 @@ function createTodo(userId, title, description) {
         console.log(res);
     });
 }
+exports.createTodo = createTodo;
 //createTodo(3,"title1.012","des1.021");
 function getTodos(userId) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -109,9 +130,14 @@ function getTodos(userId) {
                 userId: userId,
             }
         });
+        if (res === null) {
+            return { 'msg': 'todos not present' };
+        }
         console.log(res);
+        return res;
     });
 }
+exports.getTodos = getTodos;
 //getTodos(3);
 function getTodosAndUserDetails(userId) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -128,4 +154,4 @@ function getTodosAndUserDetails(userId) {
         console.log(todos);
     });
 }
-getTodosAndUserDetails(1);
+//getTodosAndUserDetails(1);
